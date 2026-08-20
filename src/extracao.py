@@ -2,7 +2,6 @@ from llama_index.core import SimpleDirectoryReader
 from llama_index.readers.file import PyMuPDFReader
 import re
 import unicodedata
-from config import CAMINHO_PDFS
 
 leitor_pdf = PyMuPDFReader()
 arquivo_tipo = {".pdf": leitor_pdf}
@@ -51,7 +50,7 @@ def limpar_texto(texto: str) -> str:
         return texto
 
 
-def processar_pipeline_de_extracao(diretorio: str) -> list:
+def processar_extracao(diretorio: str) -> list:
     """
     Extrai o texto dos PDFs, remove páginas vazias
     e aplica a normalização no conteúdo de cada documento.
@@ -74,10 +73,3 @@ def processar_pipeline_de_extracao(diretorio: str) -> list:
     except Exception as erro:
         print(f"Erro crítico no pipeline da Fase 1: {erro}")
         return []
-
-
-# -------------- TESTE -------------------
-if __name__ == "__main__":
-    docs = processar_pipeline_de_extracao(CAMINHO_PDFS)
-    for doc in docs:
-        print(doc.text)
