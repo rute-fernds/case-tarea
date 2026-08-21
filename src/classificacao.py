@@ -1,11 +1,9 @@
-from sentence_transformers import SentenceTransformer, util
-
-print("Carregando modelo de Similaridade Semântica")
+from sentence_transformers import SentenceTransformer
 
 modelo = SentenceTransformer("sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2")
 
 labels_tipo = [
-    "Lei Federal",
+    "Lei Federal (aprovada pelo Congresso)",
     "Portaria de Gestão Interna (órgão, instituto ou conselho)",
     "Resolução Normativa (conselho federal ou de trânsito)"
 ]
@@ -23,17 +21,26 @@ vetores_tema = modelo.encode(labels_tema, convert_to_tensor=True)
 
 
 def classificar_texto(texto: str) -> tuple:
+    """
+    Classifica um texto identificando seu Tipo e Tema via similaridade semântica.
+
+    Args:
+        texto (str): O conteúdo textual a ser classificado.
+
+    Returns:
+        tuple: Uma tupla contendo duas strings no formato (tipo, tema).
+    """
+
     if not texto:
         return "Desconhecido", "Desconhecido"
-
     try:
-        vetor_tipo = modelo.encode(texto, convert_to_tensor=True)
-        similaridade_tipo = modelo.similarity(vetor_tipo, vetores_tipo) 
+        vetor_texto = modelo.encode(texto, convert_to_tensor=True)
+        
+        similaridade_tipo = modelo.similarity(vetor_texto, vetores_tipo) 
         indice_tipo = similaridade_tipo.argmax().item()
         tipo = labels_tipo[indice_tipo]
         
-        vetor_tema = modelo.encode(texto, convert_to_tensor=True)
-        similaridade_tema = modelo.similarity(vetor_tema, vetores_tema)
+        similaridade_tema = modelo.similarity(vetor_texto, vetores_tema)
         indice_tema = similaridade_tema.argmax().item()
         tema = labels_tema[indice_tema]
         
@@ -44,9 +51,7 @@ def classificar_texto(texto: str) -> tuple:
         return "Erro", "Erro"
 
 
-def processar_classificacao(documentos: list) -> list:
-    print(f"Classificando {len(documentos)} documentos...")
-    
+def processar_classificacao(documentos: list) -> list:    
     docs = {}
     for pagina in documentos:
         nome = pagina.metadata.get("file_name", "Desconhecido")
