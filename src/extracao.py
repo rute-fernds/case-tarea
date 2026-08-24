@@ -1,111 +1,137 @@
-from llama_index.core import SimpleDirectoryReader
-from llama_index.readers.file import PyMuPDFReader
-import numpy as np
-import easyocr
-import unicodedata
-import fitz  
 import re
+import os
+import json
+import cv2
+import numpy as np
+import pymupdf
+import pytesseract
+from llama_index.core import Document
+from config import CAMINHO_TESSERACT, CONFIG_TESSERACT, CAMINHO_PDFS, CAMINHO_JSON
+from pathlib import Path
 
-leitor_ocr = easyocr.Reader(['pt'], gpu=False, verbose=False)
-leitor_pdf = PyMuPDFReader()
-arquivo_tipo = {".pdf": leitor_pdf}
+pytesseract.pytesseract.tesseract_cmd = CAMINHO_TESSERACT + r"\tesseract.exe"
 
-
-def extrair_texto_pdf(diretorio: str) -> list:
-    """
-    Extrai o texto bruto de todos os arquivos PDF de uma pasta específica.
-
-    Args:
-        diretorio (str): O caminho da pasta onde os PDFs estão salvos.
-
-    Returns:
-        list: Uma lista de objetos do tipo Document contendo o texto e metadados.
-    """
+def pre_processar_img(img_array: np.ndarray) -> np.ndarray:
     try:
-        documentos = SimpleDirectoryReader(
-            input_dir=diretorio,
-            file_extractor=arquivo_tipo,
-            required_exts=[".pdf"]
-        ).load_data()
-        return documentos
-    except Exception as erro:
-        print(f"Erro ao extrair documentos: {erro}")
-        return []
+        img_cinza = cv2.cvtColor(img_array, cv2.COLOR_BGR2GRAY)
+        img_gaus = cv2.GaussianBlur(img_cinza, (3, 3), 0)
+        _, img_binarizada = cv2.threshold(img_gaus, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
+        return img_binarizada
+    except Exception as e:
+        print(f"Erro ao tentar realizar o pré-processamento da imagem: {e}") 
+        return img_array
 
 
-def limpar_texto(texto: str) -> str:
-    """Remove quebras de linha irregulares, hifenização, símbolos e normaliza o texto."""
-    if not texto:
+def ocr_img(img_processada: np.ndarray) -> str:
+    try:
+        texto_extraido = pytesseract.image_to_string(img_processada, config=CONFIG_TESSERACT)
+        return texto_extraido.strip()
+    except Exception as e:
+        print(f"Erro ao tentar extrair texto da imagem: {e}")
         return ""
+
+
+def limpar_texto(texto: str, is_ocr: bool = False) -> str:
     try:
-        texto_limpo = re.sub(r'§', 'parágrafo ', texto)
-        texto_limpo = unicodedata.normalize('NFKC', texto_limpo)
-        texto_limpo = re.sub(r'(\d+)[oO°º](?!\w)', r'\1º', texto_limpo)
-        texto_limpo = re.sub(r'(\d+)[aAª](?!\w)', r'\1ª', texto_limpo)
-        texto_limpo = re.sub(r'(?i)\s*(p/|/p|<p>|</p>|\\p)\s*', ' ', texto_limpo)
-        texto_limpo = re.sub(r'-\n\s*', '', texto_limpo)
-        texto_limpo = re.sub(r'(?<!\n)\n(?!\n)', ' ', texto_limpo)
-        texto_limpo = re.sub(r'\s+', ' ', texto_limpo)
+        if not texto:
+            return ""
+        
+        if is_ocr:
+            texto = re.sub(r'\b8\s+(?=\d+([º°ª]|\.|-))', '§ ', texto)
+            texto = re.sub(r'(?<=[a-zA-Z])\(', ' (', texto)        
+
+        texto = re.sub(r'\n{2,}', '<PARAGRAFO>', texto)
+        texto = re.sub(r'\n', ' ', texto)
+        texto = texto.replace('<PARAGRAFO>', '\n\n')
+        texto_limpo = re.sub(r'[ \t]{2,}', ' ', texto)
         return texto_limpo.strip()
 
-    except Exception as erro:
-        print(f"Erro na normalização: {erro}")
+    except Exception as e:
+        print(f'Erro ao realizar limpeza no texto extraído: {e}')
         return texto
 
 
-def processar_ocr(caminho_arquivo: str, numero_pagina: int) -> str:
-    """
-    Extrai o texto de uma página específica de um arquivo PDF utilizando OCR (EasyOCR).
-
-    Args:
-        caminho_arquivo (str): O caminho do arquivo PDF.
-        numero_pagina (int): O número da página a ser lida.
-
-    Returns:
-        str: Uma string contendo os parágrafos de texto extraídos da página.
-    """
+def salvar_json(documentos: list, caminho_saida_json: str ) -> bool:
     try:
-        doc = fitz.open(caminho_arquivo)
-        pagina = doc.load_page(numero_pagina - 1)
-        
-        pix = pagina.get_pixmap(dpi=200) # dpi: pontos por polegada
-        
-        img_matriz= np.frombuffer(pix.samples, dtype=np.uint8).reshape(pix.h, pix.w, pix.n)
-        
-        resultado = leitor_ocr.readtext(img_matriz, detail=0, paragraph=True)
-        
-        return "\n".join(resultado)
-        
-    except Exception as erro:
-        print(f"Erro no processamento do OCR: {erro}")
-        return ""
+        caminho_arquivo = Path(caminho_saida_json)
+        caminho_arquivo.parent.mkdir(parents=True, exist_ok=True)
+
+        lista_dicionarios = []
+        for doc in documentos:
+            dicionario = doc.to_dict()
+            lista_dicionarios.append(dicionario)
+
+        with open(caminho_arquivo, 'w', encoding='utf-8') as f:
+            json.dump(lista_dicionarios, f, ensure_ascii=False, indent=4)
+
+        print(f"JSON salvo em: {caminho_arquivo}")
+        return True
+
+    except Exception as e:
+        print(f"Erro ao salvar arquivo JSON: {e}")
+        return False
 
 
-def processar_extracao(diretorio: str) -> list:
-    print(f"Extração e normalização de PDFs da pasta: {diretorio}")
-    documentos_extraidos = extrair_texto_pdf(diretorio)
+def processar_pagina(pagina, arquivo: str, caminho_arquivo: str, pagina_index: int) -> Document | None:
+    texto_pagina = pagina.get_text().strip()
+    pagina_ocr = False 
+
+    if len(texto_pagina) < 50:
+        pagina_ocr = True
+        pix = pagina.get_pixmap(dpi=300)
+        img_array = np.frombuffer(pix.samples, dtype=np.uint8).reshape(pix.h, pix.w, pix.n)
+
+        if pix.n == 4:
+            img_array = cv2.cvtColor(img_array, cv2.COLOR_RGBA2BGR)
+        elif pix.n == 3:
+            img_array = cv2.cvtColor(img_array, cv2.COLOR_RGB2BGR)
+
+        img_processada = pre_processar_img(img_array)
+        texto_ocr = ocr_img(img_processada)
+
+        if texto_ocr and texto_ocr.strip():
+            texto_pagina = texto_ocr
+
+    if texto_pagina.strip():
+        texto_limpo = limpar_texto(texto_pagina, is_ocr=pagina_ocr)
+        return Document(
+            text=texto_limpo,
+            metadata={
+                "name_file": arquivo,
+                "path_file": caminho_arquivo,
+                "page_label": str(pagina_index + 1),
+                "ocr": pagina_ocr
+            }
+        )
+    return None
+
+
+def processar_pdf(caminho_arquivo: str, arquivo: str) -> list:
+    docs = []
+    try:
+        with pymupdf.open(caminho_arquivo) as documento:
+            for pagina_index, pagina in enumerate(documento):
+                doc_llama = processar_pagina(pagina, arquivo, caminho_arquivo, pagina_index)
+                if doc_llama:
+                    docs.append(doc_llama)
+    except Exception as e:
+        print(f"Erro ao processar o arquivo {arquivo}: {e}")
+    return docs
+
+
+def extrair_texto_pdf(diretorio: str, caminho_json: str = None) -> list:
+    print(f"Iniciando extração de texto dos PDFs da pasta: {diretorio}")
     documentos_processados = []
-
-    contador_paginas = {}
     
-    for documento in documentos_extraidos:
-        texto_bruto = documento.text.strip()
-        arquivo_caminho = documento.metadata.get("file_path", "Desconhecido")
+    for arquivo in os.listdir(diretorio):
+        if arquivo.lower().endswith(".pdf"):
+            caminho_arquivo = os.path.join(diretorio, arquivo)
+            documentos_processados.extend(processar_pdf(caminho_arquivo, arquivo))
+    
+    print(f"Total de páginas extraídas/processadas: {len(documentos_processados)}")
+    
+    if caminho_json:
+        salvar_json(documentos_processados, caminho_json)
 
-        if arquivo_caminho not in contador_paginas:
-            contador_paginas[arquivo_caminho] = 1
-        else:
-            contador_paginas[arquivo_caminho] += 1
-
-        num_pagina = contador_paginas[arquivo_caminho]
-        documento.metadata["page_label"] = str(num_pagina)
-
-        if not texto_bruto and arquivo_caminho != "Desconhecido":
-            texto_bruto = processar_ocr(arquivo_caminho, num_pagina)
-
-        if texto_bruto.strip():
-            texto_normalizado = limpar_texto(texto_bruto)
-            documento.set_content(texto_normalizado)
-            documentos_processados.append(documento)
-            
     return documentos_processados
+
