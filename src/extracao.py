@@ -1,13 +1,13 @@
-import re
-import os
-import json
-import cv2
+from config import CAMINHO_TESSERACT, CONFIG_TESSERACT
+from llama_index.core import Document
+from pathlib import Path
 import numpy as np
 import pymupdf
 import pytesseract
-from llama_index.core import Document
-from config import CAMINHO_TESSERACT, CONFIG_TESSERACT, CAMINHO_PDFS, CAMINHO_JSON
-from pathlib import Path
+import json
+import cv2
+import re
+import os
 
 pytesseract.pytesseract.tesseract_cmd = CAMINHO_TESSERACT + r"\tesseract.exe"
 
@@ -134,4 +134,3 @@ def extrair_texto_pdf(diretorio: str, caminho_json: str = None) -> list:
         salvar_json(documentos_processados, caminho_json)
 
     return documentos_processados
-
