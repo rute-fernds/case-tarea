@@ -1,6 +1,18 @@
 from sentence_transformers import SentenceTransformer
 
+<<<<<<< HEAD
 modelo = SentenceTransformer("sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2")
+=======
+torch.set_num_threads(6)
+
+model_id = "MoritzLaurer/mDeBERTa-v3-base-mnli-xnli"
+
+tokenizer = AutoTokenizer.from_pretrained(model_id)
+
+modelo_onnx = ORTModelForSequenceClassification.from_pretrained(model_id, export=True)
+
+classificador = pipeline("zero-shot-classification", model=modelo_onnx, tokenizer=tokenizer)
+>>>>>>> 6992553 (feat(classificacao): Implementa modelo de zero-shot-classification otimizado por meio do ONNX para classificação dos tipos e temas dos PDFs)
 
 labels_tipo = [
     "Lei Federal (aprovada pelo Congresso)",
@@ -16,6 +28,7 @@ labels_tema = [
     "Assistência Social e Transferência de Renda"
 ]
 
+<<<<<<< HEAD
 vetores_tipo = modelo.encode(labels_tipo, convert_to_tensor=True)
 vetores_tema = modelo.encode(labels_tema, convert_to_tensor=True)
 
@@ -33,6 +46,9 @@ def classificar_texto(texto: str) -> tuple:
 
     if not texto:
         return "Desconhecido", "Desconhecido"
+=======
+def classificar_texto(texto: str) -> dict:
+>>>>>>> 6992553 (feat(classificacao): Implementa modelo de zero-shot-classification otimizado por meio do ONNX para classificação dos tipos e temas dos PDFs)
     try:
         vetor_texto = modelo.encode(texto, convert_to_tensor=True)
         
@@ -44,6 +60,7 @@ def classificar_texto(texto: str) -> tuple:
         indice_tema = similaridade_tema.argmax().item()
         tema = labels_tema[indice_tema]
         
+<<<<<<< HEAD
         return tipo, tema
     
     except Exception as erro:
@@ -79,3 +96,8 @@ def processar_classificacao(documentos: list) -> list:
 
     print("Classificação de texto concluída.")
     return documentos_classificados
+=======
+    except Exception as e:
+        print(f"Erro ao salvar o JSON classificado: {e}")
+        return False
+>>>>>>> 6992553 (feat(classificacao): Implementa modelo de zero-shot-classification otimizado por meio do ONNX para classificação dos tipos e temas dos PDFs)
