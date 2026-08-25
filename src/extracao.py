@@ -1,5 +1,4 @@
 from config import CAMINHO_TESSERACT, CONFIG_TESSERACT
-from llama_index.core import Document
 from pathlib import Path
 import numpy as np
 import pymupdf
@@ -51,28 +50,20 @@ def limpar_texto(texto: str, is_ocr: bool = False) -> str:
         return texto
 
 
-def salvar_json(documentos: list, caminho_saida_json: str ) -> bool:
+def salvar_json(documentos: list, caminho_saida_json: str) -> bool:
     try:
         caminho_arquivo = Path(caminho_saida_json)
         caminho_arquivo.parent.mkdir(parents=True, exist_ok=True)
-
-        lista_dicionarios = []
-        for doc in documentos:
-            dicionario = doc.to_dict()
-            lista_dicionarios.append(dicionario)
-
         with open(caminho_arquivo, 'w', encoding='utf-8') as f:
-            json.dump(lista_dicionarios, f, ensure_ascii=False, indent=4)
-
+            json.dump(documentos, f, ensure_ascii=False, indent=4)
         print(f"JSON salvo em: {caminho_arquivo}")
         return True
-
     except Exception as e:
         print(f"Erro ao salvar arquivo JSON: {e}")
         return False
 
 
-def processar_pagina(pagina, arquivo: str, caminho_arquivo: str, pagina_index: int) -> Document | None:
+def processar_pagina(pagina, arquivo: str, caminho_arquivo: str, pagina_index: int) -> dict:
     texto_pagina = pagina.get_text().strip()
     pagina_ocr = False 
 
@@ -94,15 +85,16 @@ def processar_pagina(pagina, arquivo: str, caminho_arquivo: str, pagina_index: i
 
     if texto_pagina.strip():
         texto_limpo = limpar_texto(texto_pagina, is_ocr=pagina_ocr)
-        return Document(
-            text=texto_limpo,
-            metadata={
+        return {
+            "text": texto_limpo,
+            "metadata": {
                 "name_file": arquivo,
                 "path_file": caminho_arquivo,
                 "page_label": str(pagina_index + 1),
                 "ocr": pagina_ocr
             }
-        )
+        }
+    
     return None
 
 
@@ -122,15 +114,13 @@ def processar_pdf(caminho_arquivo: str, arquivo: str) -> list:
 def extrair_texto_pdf(diretorio: str, caminho_json: str = None) -> list:
     print(f"Iniciando extração de texto dos PDFs da pasta: {diretorio}")
     documentos_processados = []
-    
     for arquivo in os.listdir(diretorio):
         if arquivo.lower().endswith(".pdf"):
             caminho_arquivo = os.path.join(diretorio, arquivo)
             documentos_processados.extend(processar_pdf(caminho_arquivo, arquivo))
-    
-    print(f"Total de páginas extraídas/processadas: {len(documentos_processados)}")
-    
+
+    print(f"Total de páginas processadas: {len(documentos_processados)}")
+
     if caminho_json:
         salvar_json(documentos_processados, caminho_json)
-
     return documentos_processados
