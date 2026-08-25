@@ -1,10 +1,11 @@
 import torch
 from transformers import pipeline, AutoTokenizer
 from optimum.onnxruntime import ORTModelForSequenceClassification
+from config import NUM_THREADS
 from pathlib import Path
 import json
 
-torch.set_num_threads(6)
+torch.set_num_threads(NUM_THREADS)
 
 model_id = "MoritzLaurer/mDeBERTa-v3-base-mnli-xnli"
 
@@ -80,14 +81,14 @@ def processar_classificacao(caminho_entrada: str, caminho_saida: str) -> bool:
 
     documentos_classificados = {}
 
-    print(f"Iniciando classificação. Total de páginas extraídas: {len(documentos)}")
+    print(f"Iniciando classificação de {len(documentos)} páginas")
 
     for documento in documentos:
         nome_arquivo = documento.get("metadata", {}).get("name_file")
         texto = documento.get("text", "")
 
         if nome_arquivo not in documentos_classificados and texto.strip():
-            print(f"Classificando documento: {nome_arquivo}...")
+            print(f"Classificando documento: {nome_arquivo}")
             documentos_classificados[nome_arquivo] = classificar_texto(texto)
 
         if nome_arquivo in documentos_classificados:
