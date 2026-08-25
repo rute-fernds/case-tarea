@@ -91,7 +91,7 @@ def processar_pagina(pagina, arquivo: str, caminho_arquivo: str, pagina_index: i
                 "name_file": arquivo,
                 "path_file": caminho_arquivo,
                 "page_label": str(pagina_index + 1),
-                "ocr": pagina_ocr
+                "page_ocr": pagina_ocr
             }
         }
     

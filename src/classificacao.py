@@ -1,7 +1,7 @@
 import torch
+from config import NUM_THREADS
 from transformers import pipeline, AutoTokenizer
 from optimum.onnxruntime import ORTModelForSequenceClassification
-from config import NUM_THREADS
 from pathlib import Path
 import json
 
@@ -31,7 +31,7 @@ labels_tema = [
 
 def classificar_texto(texto: str) -> dict:
     try:
-        texto_limpo = " ".join(texto[:1000].split())[:800]
+        texto_limpo = " ".join(texto.split())
 
         if not texto_limpo:
             return {}
@@ -42,14 +42,18 @@ def classificar_texto(texto: str) -> dict:
             texto_limpo, 
             labels_tipo, 
             multi_label=False,
-            hypothesis_template=template_pt
+            hypothesis_template=template_pt,
+            truncation=True,
+            max_length=512
         )
 
         resultado_tema = classificador(
             texto_limpo, 
             labels_tema, 
             multi_label=False,
-            hypothesis_template=template_pt
+            hypothesis_template=template_pt,
+            truncation=True,
+            max_length=512
         )
 
         return {
@@ -81,7 +85,7 @@ def processar_classificacao(caminho_entrada: str, caminho_saida: str) -> bool:
 
     documentos_classificados = {}
 
-    print(f"Iniciando classificação de {len(documentos)} páginas")
+    print(f"Iniciando classificação")
 
     for documento in documentos:
         nome_arquivo = documento.get("metadata", {}).get("name_file")
