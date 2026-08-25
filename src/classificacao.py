@@ -1,8 +1,9 @@
-from sentence_transformers import SentenceTransformer
+import torch
+from transformers import pipeline, AutoTokenizer
+from optimum.onnxruntime import ORTModelForSequenceClassification
+from pathlib import Path
+import json
 
-<<<<<<< HEAD
-modelo = SentenceTransformer("sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2")
-=======
 torch.set_num_threads(6)
 
 model_id = "MoritzLaurer/mDeBERTa-v3-base-mnli-xnli"
@@ -12,92 +13,96 @@ tokenizer = AutoTokenizer.from_pretrained(model_id)
 modelo_onnx = ORTModelForSequenceClassification.from_pretrained(model_id, export=True)
 
 classificador = pipeline("zero-shot-classification", model=modelo_onnx, tokenizer=tokenizer)
->>>>>>> 6992553 (feat(classificacao): Implementa modelo de zero-shot-classification otimizado por meio do ONNX para classificação dos tipos e temas dos PDFs)
 
 labels_tipo = [
-    "Lei Federal (aprovada pelo Congresso)",
-    "Portaria de Gestão Interna (órgão, instituto ou conselho)",
-    "Resolução Normativa (conselho federal ou de trânsito)"
+    "Lei: Atos do Poder Legislativo.",
+    "Portaria: Atos administrativos expedidos por órgãos ou autoridades executivas.", 
+    "Resolução: Atos normativos expedidos por conselhos ou colegiados."
 ]
 
 labels_tema = [
-    "Trânsito e Mobilidade Urbana",
-    "Diretrizes da Educação Nacional",
-    "Ética e Regulação da Prática Médica",
-    "Direito Administrativo e Processo Público",
-    "Assistência Social e Transferência de Renda"
+    "Educação: Diretrizes curriculares, ensino médio, bases da educação nacional e pesquisa institucional.",
+    "Administração Pública: Normas de processos administrativos federais e comissões patrimoniais de conselhos.",  
+    "Assistência Social: Gestão e repasses do Programa Bolsa Família e CadÚnico.",  
+    "Trânsito e Mobilidade: Regulamentação de veículos, mobilidade e fiscalização por videomonitoramento.",  
+    "Saúde e Medicina: Normas sobre perícia médica, telemedicina e regras para coordenação de cursos de graduação em medicina."
 ]
 
-<<<<<<< HEAD
-vetores_tipo = modelo.encode(labels_tipo, convert_to_tensor=True)
-vetores_tema = modelo.encode(labels_tema, convert_to_tensor=True)
-
-
-def classificar_texto(texto: str) -> tuple:
-    """
-    Classifica um texto identificando seu Tipo e Tema via similaridade semântica.
-
-    Args:
-        texto (str): O conteúdo textual a ser classificado.
-
-    Returns:
-        tuple: Uma tupla contendo duas strings no formato (tipo, tema).
-    """
-
-    if not texto:
-        return "Desconhecido", "Desconhecido"
-=======
 def classificar_texto(texto: str) -> dict:
->>>>>>> 6992553 (feat(classificacao): Implementa modelo de zero-shot-classification otimizado por meio do ONNX para classificação dos tipos e temas dos PDFs)
     try:
-        vetor_texto = modelo.encode(texto, convert_to_tensor=True)
+        texto_limpo = " ".join(texto[:1000].split())[:800]
+
+        if not texto_limpo:
+            return {}
+
+        template_pt = "Este documento trata de {}."
+
+        resultado_tipo = classificador(
+            texto_limpo, 
+            labels_tipo, 
+            multi_label=False,
+            hypothesis_template=template_pt
+        )
+
+        resultado_tema = classificador(
+            texto_limpo, 
+            labels_tema, 
+            multi_label=False,
+            hypothesis_template=template_pt
+        )
+
+        return {
+            "tipo_predito": resultado_tipo['labels'][0].split(":")[0],
+            "confianca_tipo": round(resultado_tipo['scores'][0], 4),
+            "tema_predito": resultado_tema['labels'][0].split(":")[0],
+            "confianca_tema": round(resultado_tema['scores'][0], 4)
+        }
         
-        similaridade_tipo = modelo.similarity(vetor_texto, vetores_tipo) 
-        indice_tipo = similaridade_tipo.argmax().item()
-        tipo = labels_tipo[indice_tipo]
+    except Exception as e:
+        print(f"Erro no processo de classificação: {e}")
+        return {}
+
+
+def carregar_json(json_caminho: str) -> list:
+    try:
+        with open(json_caminho, 'r', encoding='utf-8') as f:
+            return json.load(f)
+    except Exception as e:
+        print(f"Erro ao carregar o JSON: {e}")
+        return []
+
+
+def processar_classificacao(caminho_entrada: str, caminho_saida: str) -> bool:
+    documentos = carregar_json(caminho_entrada)
+
+    if not documentos:
+        return False
+
+    documentos_classificados = {}
+
+    print(f"Iniciando classificação. Total de páginas extraídas: {len(documentos)}")
+
+    for documento in documentos:
+        nome_arquivo = documento.get("metadata", {}).get("name_file")
+        texto = documento.get("text", "")
+
+        if nome_arquivo not in documentos_classificados and texto.strip():
+            print(f"Classificando documento: {nome_arquivo}...")
+            documentos_classificados[nome_arquivo] = classificar_texto(texto)
+
+        if nome_arquivo in documentos_classificados:
+            documento["metadata"].update(documentos_classificados[nome_arquivo])
+
+    try:
+        json_saida = Path(caminho_saida)
+        json_saida.parent.mkdir(parents=True, exist_ok=True)
         
-        similaridade_tema = modelo.similarity(vetor_texto, vetores_tema)
-        indice_tema = similaridade_tema.argmax().item()
-        tema = labels_tema[indice_tema]
+        with open(json_saida, 'w', encoding='utf-8') as f:
+            json.dump(documentos, f, ensure_ascii=False, indent=4)
+            
+        print(f"JSON classificado salvo em: {json_saida}")
+        return True
         
-<<<<<<< HEAD
-        return tipo, tema
-    
-    except Exception as erro:
-        print(f"Erro na classificação: {erro}")
-        return "Erro", "Erro"
-
-
-def processar_classificacao(documentos: list) -> list:    
-    docs = {}
-    for pagina in documentos:
-        nome = pagina.metadata.get("file_name", "Desconhecido")
-
-        if nome not in docs:
-            docs[nome] = []
-
-        docs[nome].append(pagina)
-
-    documentos_classificados = []
-
-    for nome_arquivo, paginas in docs.items():
-        texto_amostra = ""
-        for pagina in paginas:
-            texto_amostra += pagina.text + " "
-            if len(texto_amostra) >= 2000:
-                break 
-
-        tipo, tema = classificar_texto(texto_amostra)
-        
-        for pagina in paginas:
-            pagina.metadata["tipo_documento"] = tipo
-            pagina.metadata["tema_documento"] = tema
-            documentos_classificados.append(pagina)
-
-    print("Classificação de texto concluída.")
-    return documentos_classificados
-=======
     except Exception as e:
         print(f"Erro ao salvar o JSON classificado: {e}")
         return False
->>>>>>> 6992553 (feat(classificacao): Implementa modelo de zero-shot-classification otimizado por meio do ONNX para classificação dos tipos e temas dos PDFs)
