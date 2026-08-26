@@ -1,47 +1,39 @@
-import chromadb
-from llama_index.core import VectorStoreIndex, StorageContext, Settings
-from llama_index.vector_stores.chroma import ChromaVectorStore
+from llama_index.core import Document, VectorStoreIndex, StorageContext
+from llama_index.vector_stores.lancedb import LanceDBVectorStore
 from llama_index.embeddings.huggingface import HuggingFaceEmbedding
+import json
+from config import CAMINHO_JSON_CLASSIFICADO, CAMINHO_DB
 
-Settings.embed_model = HuggingFaceEmbedding(model_name="sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2")
 
-Settings.chunk_size = 512
-Settings.chunk_overlap = 50
+def criar_db(caminho_json: str, caminho_banco: str):
+    embed_modelo = HuggingFaceEmbedding(model_name="sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2", device="cpu")
 
-def processar_vetorizacao(documentos: list, caminho_db: str = "./chroma_db") -> VectorStoreIndex:
-    """
-    Fatia (Chunks), vetoriza e armazena documentos em um banco de dados vetorial, o ChromaDB.
+    vetores = LanceDBVectorStore(
+        uri=caminho_banco, 
+        mode="overwrite", 
+        query_type="hybrid")
 
-    Args:
-        documentos (list): Lista de objetos Document gerados pela etapa de extração e classificação.
-        caminho_db (str, optional): Caminho do diretório onde o banco físico será criado ou atualizado.
+    storage_context = StorageContext.from_defaults(vector_store=vetores)
 
-    Returns:
-        VectorStoreIndex: O índice de orquestração construído sobre os dados vetorizados.
-    """
-    if not documentos:
-        print("Nenhum documento para vetorização.")
-        return None
+    with open(caminho_json, 'r', encoding='utf-8') as f:
+        dados = json.load(f)
 
-    print(f"Vetorizando {len(documentos)} páginas.")
+    documentos = []
+    for doc in dados:
+        documentos.append(Document(
+            text=doc.get("text", ""),
+            metadata=doc.get("metadata", {})
+        ))
 
-    try:
-        db = chromadb.PersistentClient(path=caminho_db)
-        
-        colecao_chroma = db.get_or_create_collection("documentos_tarea")
-        
-        vetor_store = ChromaVectorStore(chroma_collection=colecao_chroma)
-        storage_context = StorageContext.from_defaults(vector_store=vetor_store)
-        
-        indice = VectorStoreIndex.from_documents(
-            documentos, 
-            storage_context=storage_context,
-            show_progress=True
-        )
-        
-        print(f"Banco vetorial criado na pasta: '{caminho_db}'!")
-        return indice
+    index = VectorStoreIndex.from_documents(
+        documentos, 
+        storage_context=storage_context,
+        embed_model=embed_modelo
+    )
+    
+    print("Vetorização realizada.")
+    return index
 
-    except Exception as erro:
-        print(f"Erro durante a vetorização: {erro}")
-        return None
+
+if __name__ == "__main__":
+    criar_db(CAMINHO_JSON_CLASSIFICADO, CAMINHO_DB)
