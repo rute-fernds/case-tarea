@@ -103,9 +103,9 @@ def processar_pdf(caminho_arquivo: str, arquivo: str) -> list:
     try:
         with pymupdf.open(caminho_arquivo) as documento:
             for pagina_index, pagina in enumerate(documento):
-                doc_llama = processar_pagina(pagina, arquivo, caminho_arquivo, pagina_index)
-                if doc_llama:
-                    docs.append(doc_llama)
+                doc = processar_pagina(pagina, arquivo, caminho_arquivo, pagina_index)
+                if doc:
+                    docs.append(doc)
     except Exception as e:
         print(f"Erro ao processar o arquivo {arquivo}: {e}")
     return docs
