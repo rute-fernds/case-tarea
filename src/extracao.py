@@ -1,7 +1,7 @@
 from src.config import CAMINHO_TESSERACT, CONFIG_TESSERACT
 from pathlib import Path
 import numpy as np
-import pymupdf
+import fitz
 import pytesseract
 import unicodedata
 import json
@@ -111,7 +111,7 @@ def processar_pagina(pagina, arquivo: str, caminho_arquivo: str, pagina_index: i
 def processar_pdf(caminho_arquivo: str, arquivo: str) -> list:
     docs = []
     try:
-        with pymupdf.open(caminho_arquivo) as documento:
+        with fitz.open(caminho_arquivo) as documento:
             for pagina_index, pagina in enumerate(documento):
                 doc = processar_pagina(pagina, arquivo, caminho_arquivo, pagina_index)
                 if doc:
@@ -121,7 +121,7 @@ def processar_pdf(caminho_arquivo: str, arquivo: str) -> list:
     return docs
 
 
-def extrair_texto_pdf(diretorio: str, caminho_json: str = None) -> list:
+def extrair_texto_pdf(diretorio: str, caminho_json: str) -> list:
     print(f"Iniciando extração de texto dos PDFs da pasta: {diretorio}")
     documentos_processados = []
     for arquivo in os.listdir(diretorio):

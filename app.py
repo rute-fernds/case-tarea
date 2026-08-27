@@ -8,7 +8,7 @@ st.set_page_config(
     layout="centered"
 )
 
-st.markdown("## :orange[:material/star_rate:] Gemma - Assistente de Documentos")
+st.markdown("## ⭐Gemma: Assistente de Documentos")
 st.markdown("##### Consulte e explore seus documentos com o Gemma 2 2B")
 
 

@@ -11,6 +11,8 @@ model_id = "MoritzLaurer/mDeBERTa-v3-base-mnli-xnli"
 
 tokenizer = AutoTokenizer.from_pretrained(model_id)
 
+tokenizer.model_input_names = ["input_ids", "attention_mask"]
+
 modelo_onnx = ORTModelForSequenceClassification.from_pretrained(model_id, export=True)
 
 classificador = pipeline("zero-shot-classification", model=modelo_onnx, tokenizer=tokenizer)
