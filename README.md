@@ -94,8 +94,16 @@ Antes de iniciar a aplicação, abra o arquivo src/config.py e ajuste as seguint
 
 
 ### 5. Instalação de Dependências
-Rode o requirements.txt no seu terminal para baixar todas as bibliotecas utilizadas no projeto:
+Para baixar as bibliotecas utilizadas no projeto crie um ambiente virtual e em seguida rode o requirements.txt no seu terminal como mostrado abaixo:
 ```bash
+
+# Cria o ambiente virtual
+python -m venv venv
+
+# Ativa o ambiente virtual
+.\venv\Scripts\Activate.ps1
+
+# Instala as bibliotecas
 pip install -r requirements.txt
 ```
 
