@@ -5,7 +5,7 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 CAMINHO_PDFS = os.path.join(BASE_DIR, 'data', 'raw')
 CAMINHO_JSON_EXTRAIDO = os.path.join(BASE_DIR, 'data', 'processed', 'texto_extraido.json')
 CAMINHO_JSON_CLASSIFICADO = os.path.join(BASE_DIR, 'data', 'processed', 'texto_classificado.json')
-CAMINHO_DB = os.path.join(BASE_DIR, 'lancedb')
+CAMINHO_DB = os.path.join(BASE_DIR, 'data','lancedb')
 
 ICONE_USUARIO = os.path.join(BASE_DIR, "src", "img", "user.png")
 ICONE_MODELO = os.path.join(BASE_DIR, "src", "img", "ia.png")
