@@ -41,36 +41,39 @@ for msg in st.session_state.mensagens:
         if "fontes" in msg:
             exibir_fontes(msg["fontes"])
 
-if pergunta := st.chat_input("Prgunte ao Gemma"):
+
+if pergunta := st.chat_input("Pergunte ao Gemma"):
     st.session_state.mensagens.append({"role": "user", "content": pergunta})
     with st.chat_message("user", avatar=ICONE_USUARIO):
         st.markdown(pergunta)
 
     with st.chat_message("assistant", avatar=ICONE_MODELO):
         st.markdown("**Gemma**")
-        placeholder_resposta = st.empty()
         
         with st.spinner("Gerando resposta..."):
             try:
                 resposta = chat_engine.chat(pergunta)
-                placeholder_resposta.markdown(resposta.response)
-                
-                fontes_extraidas = []
-                if hasattr(resposta, 'source_nodes'):
-                    for node in resposta.source_nodes:
-                        fontes_extraidas.append({
-                            "arquivo": node.node.metadata.get('name_file', 'Desconhecido'),
-                            "pagina": node.node.metadata.get('page_label', '?'),
-                            "texto": node.node.text
-                        })
-                
-                exibir_fontes(fontes_extraidas)
-
-                st.session_state.mensagens.append({
-                    "role": "assistant", 
-                    "content": resposta.response,
-                    "fontes": fontes_extraidas
-                })
-                
+                sucesso = True
             except Exception as e:
-                placeholder_resposta.error(f"Erro de comunicação com o LLM: {e}")
+                sucesso = False
+                st.error(f"Erro de comunicação com o LLM: {e}")
+        
+        if sucesso:
+            st.markdown(resposta.response)
+            
+            fontes_extraidas = []
+            if hasattr(resposta, 'source_nodes'):
+                for node in resposta.source_nodes:
+                    fontes_extraidas.append({
+                        "arquivo": node.node.metadata.get('name_file', 'Desconhecido'),
+                        "pagina": node.node.metadata.get('page_label', '?'),
+                        "texto": node.node.text
+                    })
+            
+            exibir_fontes(fontes_extraidas)
+
+            st.session_state.mensagens.append({
+                "role": "assistant", 
+                "content": resposta.response,
+                "fontes": fontes_extraidas
+            })
