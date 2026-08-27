@@ -1,39 +1,43 @@
-from llama_index.core import Document, VectorStoreIndex, StorageContext
+from llama_index.core import Document, VectorStoreIndex, StorageContext, Settings
 from llama_index.vector_stores.lancedb import LanceDBVectorStore
 from llama_index.embeddings.huggingface import HuggingFaceEmbedding
+from llama_index.core.node_parser import SentenceSplitter
 import json
-from config import CAMINHO_JSON_CLASSIFICADO, CAMINHO_DB
 
 
-def criar_db(caminho_json: str, caminho_banco: str):
-    embed_modelo = HuggingFaceEmbedding(model_name="sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2", device="cpu")
-
-    vetores = LanceDBVectorStore(
-        uri=caminho_banco, 
-        mode="overwrite", 
-        query_type="hybrid")
-
-    storage_context = StorageContext.from_defaults(vector_store=vetores)
-
-    with open(caminho_json, 'r', encoding='utf-8') as f:
-        dados = json.load(f)
-
-    documentos = []
-    for doc in dados:
-        documentos.append(Document(
-            text=doc.get("text", ""),
-            metadata=doc.get("metadata", {})
-        ))
-
-    index = VectorStoreIndex.from_documents(
-        documentos, 
-        storage_context=storage_context,
-        embed_model=embed_modelo
-    )
-    
-    print("Vetorização realizada.")
-    return index
+def configurar_banco_vetorial(caminho_banco: str) -> StorageContext:
+    try:
+        Settings.chunk_size = 384 
+        Settings.chunk_overlap = 50
+        Settings.text_splitter = SentenceSplitter(chunk_size=384, chunk_overlap=50)
+        Settings.embed_batch_size = 32 
+        Settings.embed_model = HuggingFaceEmbedding(model_name="intfloat/multilingual-e5-small", device="cpu", text_instruction="passage: ")
+        vetores = LanceDBVectorStore(uri=caminho_banco, table_name="documentos_tarea", mode="overwrite")
+        contexto = StorageContext.from_defaults(vector_store=vetores)
+        
+        return contexto
+    except Exception as e:
+        print(f"Erro ao configurar LanceDB: {e}")
+        return None
 
 
-if __name__ == "__main__":
-    criar_db(CAMINHO_JSON_CLASSIFICADO, CAMINHO_DB)
+def indexar_documentos(caminho_json: str, armazenmaneto_contexto: StorageContext) -> VectorStoreIndex:
+    try:
+        with open(caminho_json, 'r', encoding='utf-8') as f:
+            dados = json.load(f)
+
+        documentos = []
+        for doc in dados:
+            documentos.append(Document(
+                text=doc.get("text", ""),
+                metadata=doc.get("metadata", {})
+            ))
+
+        print(f"Iniciando vetorização de {len(documentos)} documentos.")
+        index = VectorStoreIndex.from_documents(documentos, storage_context=armazenmaneto_contexto)
+        print("Vetorização concluída.")
+        
+        return index
+    except Exception as e:
+        print(f"Erro ao indexar os documentos: {e}")
+        return None
