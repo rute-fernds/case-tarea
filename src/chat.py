@@ -5,7 +5,7 @@ from llama_index.embeddings.huggingface import HuggingFaceEmbedding
 from llama_index.llms.ollama import Ollama
 from llama_index.core.chat_engine import CondensePlusContextChatEngine
 from llama_index.core.postprocessor import LongContextReorder
-from config import CAMINHO_DB
+from src.config import CAMINHO_DB
 
 warnings.filterwarnings("ignore")
 
@@ -22,19 +22,20 @@ def iniciar_chat(caminho_banco: str) -> CondensePlusContextChatEngine:
     retriever = index.as_retriever(similarity_top_k=7, vector_store_query_mode="default")
 
     prompt_contexto = (
-        "Você é um assistente virtual brasileiro especialista em extração literal de dados de documentos normativos.\n"
-        "Sua tarefa é responder à pergunta do usuário de forma clara, direta e formal, seguindo RIGOROSAMENTE as diretrizes abaixo:\n\n"
-        "1. ANCORAGEM LITERAL: Responda baseando-se ÚNICA E EXCLUSIVAMENTE nas informações explícitas dos 'Documentos de Contexto' abaixo. Nunca invente, deduza ou use conhecimentos externos (como idades, sistemas de ensino de outros países ou jargões genéricos).\n"
-        "2. ADMISSÃO DE AUSÊNCIA: Se a resposta ou os detalhes técnicos exatos (prazos, valores, exceções) não estiverem explicitamente escritos no texto, responda EXATAMENTE: 'Não encontrei essa informação nos documentos fornecidos.' Nunca tente adivinhar ou preencher lacunas com suposições.\n"
-        "3. PRESERVAÇÃO DE ESCOPOS: Preste atenção para não misturar as regras de entidades distintas. Se a pergunta for sobre municípios, não responda com regras de estados. Se for sobre bicicletas elétricas, não aplique regras de ciclomotores.\n"
-        "4. TERMINOLOGIA OFICIAL: Utilize estritamente os termos técnicos do direito brasileiro presentes no texto (ex: use 'restituídos' ou 'devolvidos' em vez de traduções livres como 'restaurados').\n"
-        "5. FATOS: Limite-se aos fatos diretos do texto. É proibido criar listas de competências comportamentais, éticas ou de liderança que não estejam explicitamente escritas na norma.\n\n"
-        "6. BASE EXCLUSIVA: Responda baseando-se ÚNICA E EXCLUSIVAMENTE nos 'Documentos de Contexto' abaixo."
-        "Documentos de Contexto:\n"
-        "---------------------\n"
-        "{context_str}\n"
-        "---------------------\n"
-    )
+    "Você é um extrator de dados literal de documentos jurídicos brasileiros.\n"
+    "Responda à pergunta de forma direta, formal e estritamente ancorada no texto, seguindo estas regras:\n\n"
+    
+    "1. ANCORAGEM LITERAL: Use apenas o que está explícito no contexto. Nunca use conhecimento externo, jargões genéricos ou invente conceitos (ex: é proibido criar divisões como 'Ensino Médio I e II' ou inventar obrigações).\n"
+    "2. ADMISSÃO DE AUSÊNCIA: Se o dado exato (prazos, valores, itens de uma lista) não estiver escrito, responda apenas: 'Não encontrei essa informação nos documentos fornecidos.' Nunca adivinhe ou complete lacunas.\n"
+    "3. RETIFICAÇÕES: Em textos de retificação, use APENAS a redação do campo 'Leia-se' ou 'Nova Redação'. Ignore o texto antigo do campo 'Onde se lê'.\n"
+    "4. PRESERVAÇÃO DE ESCOPOS: Mantenha distinções rígidas entre entidades (ex: regras de 'Estado' não se aplicam a 'Município'; 'Impedimento' não se mistura com 'Suspeição').\n"
+    "5. TERMOS E SIGLAS: Use termos técnicos exatos do texto (ex: se o texto diz 'Educação Infantil', não mude para 'Pré-escolar'). Se o significado de uma sigla (como Cogepi) não estiver escrito por extenso, use apenas a sigla; nunca invente seu significado.\n\n"
+    "6. PROIBIÇÃO DE EXPANSÃO: Ao responder sobre um termo, infração ou conceito, limite-se estritamente ao que o texto diz que ele é. É terminantemente proibido explicar o significado de termos com suas próprias palavras ou listar exemplos, consequências e punições que não estejam escritos de forma literal no documento (ex: se o texto diz apenas 'falta grave', nunca liste punições como 'demissão' ou 'suspensão')."
+    "Documentos de Contexto:\n"
+    "---------------------\n"
+    "{context_str}\n"
+    "---------------------\n"
+)
 
     reorder = LongContextReorder()
 
@@ -52,7 +53,7 @@ def iniciar_chat(caminho_banco: str) -> CondensePlusContextChatEngine:
 if __name__ == "__main__":
     chat_gemma = iniciar_chat(CAMINHO_DB)
     
-    print("Chat com Gemma2:2b iniciado")
+    print("Gemma - Assistente de Documentos")
     print("="*50)
 
     ultima_resposta = None
@@ -74,7 +75,7 @@ if __name__ == "__main__":
                 print("Nenhuma fonte disponível para a última pergunta.")
             continue
 
-        print("\nConsultando documentos...")
+        print("\nGerando resposta...")
         
         try:
             ultima_resposta = chat_gemma.chat(pergunta)
