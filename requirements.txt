@@ -1,0 +1,13 @@
+numpy==1.26.4
+PyMuPDF==1.24.2
+pytesseract==0.3.10
+opencv-python==4.9.0.80
+torch==2.3.0
+transformers==4.40.1
+optimum[onnxruntime]==1.19.1
+llama-index==0.10.43
+llama-index-vector-stores-lancedb==0.1.4
+llama-index-embeddings-huggingface==0.2.1
+llama-index-llms-ollama==0.1.5
+streamlit==1.35.0
+pandas==2.2.2
