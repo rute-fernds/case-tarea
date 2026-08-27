@@ -79,7 +79,7 @@ Após instalar os pré-requisitos, abra o seu terminal e execute o comando abaix
 ```bash
 git clone https://github.com/rute-fernds/case-tecnico-tarea.git
 ```
-### 2.Baixar Gemma2:2b
+### 2. Baixar Gemma2:2b
 Para baixar e inicializar o modelo utilizado no projeto, execute no terminal:
 ```bash
 ollama run gemma2:2b
