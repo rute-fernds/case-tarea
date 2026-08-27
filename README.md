@@ -42,7 +42,11 @@ O sistema foi desenvolvido como parte do case técnico do processo seletivo para
 |         ├── Resolucao_909_28032022.pdf
 |         ├── Resolucao_2430_21052025.pdf
 |         └── Resolucao_2434_03072025.pdf
-|    
+|
+├── 📁docs/
+|    ├── prompts_teste.txt
+|    └── Tarea - Estudo de Caso - Estagio em Dados e IA.pdf
+|
 ├── 📁src/
 |    ├── 📁img/
 |    |    ├── ia.png
