@@ -74,19 +74,19 @@ Antes de começar, certifique-se de ter instalado:
 * [Ollama](https://ollama.com/download)
 ---
 
-### 2️⃣ Clonar o Repositório
+### 1. Clonar o Repositório
 Após instalar os pré-requisitos, abra o seu terminal e execute o comando abaixo para baixar o projeto no seu computador:
 ```bash
 git clone https://github.com/rute-fernds/case-tecnico-tarea.git
 ```
-### 3️⃣ Baixar Gemma2:2b
+### 2.Baixar Gemma2:2b
 Para baixar e inicializar o modelo utilizado no projeto, execute no terminal:
 ```bash
 ollama run gemma2:2b
 ```
 **É de extrema importância que o Ollama esteja rodando em segundo plano no seu computador.**
 
-### 4️⃣ Configurações
+### 3. Configurações
 Antes de iniciar a aplicação, abra o arquivo src/config.py e ajuste as seguintes variáveis de acordo com as especificações do seu computador:
 
     NUM_THREADS: Defina a quantidade de threads do seu processador para otimizar o desempenho da extração e vetorização
@@ -94,19 +94,19 @@ Antes de iniciar a aplicação, abra o arquivo src/config.py e ajuste as seguint
     CAMINHO_TESSERACT: Confirme ou altere o caminho exato onde o Tesseract OCR foi instalado no seu sistema Windows
 
 
-### 5️⃣ Instalação de Dependências
+### 4. Instalação de Dependências
 Rode o requirements.txt no seu terminal para baixar todas as bibliotecas utilizadas no projeto:
 ```bash
 pip install -r requirements.txt
 ```
 
-### 6️⃣ Construindo o Banco de Dados Vetorial
+### 5. Construindo o Banco de Dados Vetorial
 
 Após concluir as configurações, rode o script do pipeline. Este processo fará a extração, classificação e vetorização dos dados presentes nos PDFs da pasta data/raw.
 ```bash
 python pipeline.py
 ```
-### 7️⃣ Iniciando o Assistente de Documentos Gemma IA
+### 6. Iniciando o Assistente de Documentos Gemma IA
 
 Com o banco de dados populado, basta rodar o Streamlit para abrir a interface interativa do chat no seu navegador:
 ```bash
