@@ -83,7 +83,7 @@ Para baixar e inicializar o modelo utilizado no projeto, execute no terminal:
 ```bash
 ollama run gemma2:2b
 ```
-**É de extrema importância que o Ollama esteja rodando em segundo plano no seu computador.**
+**➡️ É de extrema importância que o Ollama esteja rodando em segundo plano no seu computador.**
 
 ### 4. Configurações
 Antes de iniciar a aplicação, abra o arquivo src/config.py e ajuste as seguintes variáveis de acordo com as especificações do seu computador:
