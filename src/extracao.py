@@ -1,8 +1,9 @@
-from config import CAMINHO_TESSERACT, CONFIG_TESSERACT
+from src.config import CAMINHO_TESSERACT, CONFIG_TESSERACT
 from pathlib import Path
 import numpy as np
 import pymupdf
 import pytesseract
+import unicodedata
 import json
 import cv2
 import re
@@ -34,15 +35,24 @@ def limpar_texto(texto: str, is_ocr: bool = False) -> str:
     try:
         if not texto:
             return ""
+            
+        texto = unicodedata.normalize('NFC', texto)
         
         if is_ocr:
             texto = re.sub(r'\b8\s+(?=\d+([º°ª]|\.|-))', '§ ', texto)
             texto = re.sub(r'(?<=[a-zA-Z])\(', ' (', texto)        
 
+
+        texto = re.sub(r'(\w+)-\s*\n\s*(\w+)', r'\1\2', texto)
+        
+        texto = re.sub(r'(?:\.\s*){3,}', ' ', texto)
         texto = re.sub(r'\n{2,}', '<PARAGRAFO>', texto)
-        texto = re.sub(r'\n', ' ', texto)
+        texto = re.sub(r'(?<![.:;\-])\s*\n\s*', ' ', texto)
         texto = texto.replace('<PARAGRAFO>', '\n\n')
+        texto = re.sub(r'\n+', '\n\n', texto)
+
         texto_limpo = re.sub(r'[ \t]{2,}', ' ', texto)
+        
         return texto_limpo.strip()
 
     except Exception as e:
