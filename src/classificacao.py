@@ -1,5 +1,5 @@
 import torch
-from config import NUM_THREADS
+from src.config import NUM_THREADS
 from transformers import pipeline, AutoTokenizer
 from optimum.onnxruntime import ORTModelForSequenceClassification
 from pathlib import Path
