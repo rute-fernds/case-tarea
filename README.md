@@ -111,13 +111,13 @@ python -m venv venv
 pip install -r requirements.txt
 ```
 
-### 6. Construindo o Banco de Dados Vetorial
+### 6. Construção do Banco de Dados Vetorial
 
 Após concluir as configurações, rode o script do pipeline. Este processo fará a extração, classificação e vetorização dos dados presentes nos PDFs da pasta data/raw.
 ```bash
 python pipeline.py
 ```
-### 7. Iniciando o Assistente de Documentos Gemma IA
+### 7. Inicialização do Gemma IA
 
 Com o banco de dados populado, basta rodar o Streamlit para abrir a interface interativa do chat no seu navegador:
 ```bash
