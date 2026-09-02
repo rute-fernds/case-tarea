@@ -67,6 +67,8 @@ O sistema foi desenvolvido como parte do case técnico do processo seletivo para
 └── requirements.txt
 ```
 
+---
+
 ## 🚀 Como Rodar o Gemma IA
 
 Siga este passo a passo para configurar o ambiente e executar o sistema na sua máquina.
